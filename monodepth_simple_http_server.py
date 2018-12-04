@@ -71,17 +71,6 @@ class MonoDepthModel:
                 2, args.input_height, args.input_width, 3])
         self._model = MonodepthModel(params, "test", self._left, None)
 
-        """
-        for fname in os.listdir(args.image_path):
-            input_image = scipy.misc.imread(args.image_path, mode="RGB")
-            original_height, original_width, num_channels = input_image.shape
-            input_image = scipy.misc.imresize(
-                input_image, [
-                    args.input_height, args.input_width], interp='lanczos')
-            input_image = input_image.astype(np.float32) / 255
-            input_images = np.stack((input_image, np.fliplr(input_image)), 0)
-        """
-
         # SESSION
         config = tf.ConfigProto(allow_soft_placement=True)
         config.gpu_options.allow_growth=True
@@ -100,40 +89,6 @@ class MonoDepthModel:
         restore_path = args.checkpoint_path.split(".")[0]
         train_saver.restore(self._sess, restore_path)
 
-        """
-        for fname in os.listdir(args.image_path):
-            input_image = scipy.misc.imread(args.image_path + "/" + fname, mode="RGB")
-            original_height, original_width, num_channels = input_image.shape
-            input_image = scipy.misc.imresize(
-                input_image, [
-                    args.input_height, args.input_width], interp='lanczos')
-            input_image = input_image.astype(np.float32) / 255
-            input_images = np.stack((input_image, np.fliplr(input_image)), 0)
-
-            disp = sess.run(self._model.disp_left_est[0], feed_dict={self._left: input_images})
-            disp_pp = self.post_process_disparity(disp.squeeze()).astype(np.float32)
-
-            # output_directory = os.path.dirname(args.image_path)
-            output_directory = args.output_path
-            output_name = os.path.splitext(fname)[0]
-
-            np.save(
-                os.path.join(
-                    output_directory,
-                    "{}.npy".format(output_name)),
-                disp_pp)
-            disp_to_img = scipy.misc.imresize(
-                disp_pp.squeeze(), [
-                    original_height, original_width])
-            plt.imsave(
-                os.path.join(
-                    output_directory,
-                    "{}.png".format(output_name)),
-                disp_to_img,
-                cmap='plasma')
-
-        print('done!')
-        """
 
     def __call__(self, input_image):
         original_height, original_width, num_channels = input_image.shape
@@ -165,13 +120,19 @@ class MonoDepthHTTPRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         response = BytesIO()
         recvData = json.loads(body.decode("ASCII"))
+
+        # convert the input to frame
         inputFrame = np.frombuffer(base64.decodebytes(recvData["frame"].encode("ASCII")), dtype=np.uint8)
         inputFrame = inputFrame.reshape(recvData["shape"])
 
+        # inference
         outputFrame = self._model(inputFrame)
 
+        # construct output data
         resultDict = {"shape": outputFrame.shape, "frame": base64.b64encode(outputFrame).decode("ASCII")}
 
+        # some ext information such as frame index will be store in "extData"
+        # we usuaully do not process extData here, but send back to caller directly
         if "extData" in recvData:
             resultDict["extData"] = recvData["extData"]
 
