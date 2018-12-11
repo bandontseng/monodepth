@@ -122,11 +122,13 @@ def test_simple(params):
         output_directory = args.output_path
         output_name = os.path.splitext(fname)[0]
 
+        """
         np.save(
             os.path.join(
                 output_directory,
                 "{}.npy".format(output_name)),
             disp_pp)
+        """
         disp_to_img = scipy.misc.imresize(
             disp_pp.squeeze(), [
                 original_height, original_width])

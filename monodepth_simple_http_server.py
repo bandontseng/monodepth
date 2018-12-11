@@ -15,7 +15,6 @@ import numpy as np
 import argparse
 import tensorflow as tf
 import scipy.misc
-import matplotlib.pyplot as plt
 
 from monodepth_model import monodepth_parameters, MonodepthModel
 
@@ -73,7 +72,7 @@ class MonoDepthModel:
 
         # SESSION
         config = tf.ConfigProto(allow_soft_placement=True)
-        config.gpu_options.allow_growth=True
+        config.gpu_options.allow_growth = True
         self._sess = tf.Session(config=config)
 
         # SAVER
@@ -88,7 +87,6 @@ class MonoDepthModel:
         # RESTORE
         restore_path = args.checkpoint_path.split(".")[0]
         train_saver.restore(self._sess, restore_path)
-
 
     def __call__(self, input_image):
         original_height, original_width, num_channels = input_image.shape
@@ -162,6 +160,7 @@ def main(_):
 
     server = HTTPServer(('', 8000), partial(MonoDepthHTTPRequestHandler, model))
     server.serve_forever()
+
 
 if __name__ == '__main__':
     # tf.app.run()
